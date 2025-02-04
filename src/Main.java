@@ -1,15 +1,62 @@
-//TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
-// click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
+import modele.Commande;
+import modele.CommandeBuilder;
+import modele.EStatut;
+import notification.Client;
+import paiement.FMoyenPaiement;
+import paiement.IMoyenPaiement;
+import utils.TransactionLogger;
+import validation.ValidationChain;
+import validation.IHandler;
+
+import java.util.List;
+
 public class Main {
     public static void main(String[] args) {
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+        // Création du logger
+        TransactionLogger logger = TransactionLogger.getInstance();
+        logger.log("Démarrage de l'application");
 
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+        // Création des objets nécessaires
+        IHandler chaineValidation = ValidationChain.construireChaine();
+
+        // Liste de produits
+        List<String> produits = List.of(
+                "Clavier 10.99€",
+                "Antivirus 159.99€",
+                "Licence Windows Server 599.49€"
+        );
+
+        // Calcul du prix total
+        double prixTotal = 10.99 + 159.99 + 599.49;
+
+        // Création de la commande avec le builder
+        Commande commande = new CommandeBuilder(1)
+                .withProduits(produits)
+                .withPrixTotal(prixTotal)
+                .withStatut(EStatut.EN_ATTENTE)
+                .build();
+
+        // Ajout des observateurs
+        Client client1 = new Client(1, "Pika", "pika@uha.fr");
+        Client client2 = new Client(2, "Zitouni", "zitouni@uha.fr");
+        Client client3 = new Client(3, "Anastasia", "anastasia@uha.fr");
+        Client client4 = new Client(4, "Fifi", "fifi@uha.fr");
+        commande.ajouterObserver(client1);
+        commande.ajouterObserver(client2);
+        commande.ajouterObserver(client3);
+        commande.ajouterObserver(client4);
+
+        // Traitement de la commande
+        logger.log("Traitement de la commande " + commande.getId());
+        chaineValidation.traiter(commande);
+        logger.log("Commande " + commande.getId() + " traitée");
+
+        // Utilisation de la Factory pour gérer le paiement
+        String typePaiement = "carte";
+        double montant = commande.getPrixTotal();
+
+        IMoyenPaiement moyenPaiement = FMoyenPaiement.getMoyenPaiement(typePaiement);
+        moyenPaiement.payer(montant);
+        logger.log("Paiement de " + montant + "€ effectué via " + typePaiement);
     }
 }
